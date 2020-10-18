@@ -81,6 +81,7 @@
                     document.getElementById("username").value = ''
                     document.getElementById("password").value = ''
                     if (res && res.data && res.data.success) {
+                        dismissAlert();
                         setCookieWatcher();
                         getDashboard();
                     }
