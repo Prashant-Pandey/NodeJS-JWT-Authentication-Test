@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prashant Pandey</title>
+    <link rel='stylesheet'
+        href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/css/bootstrap.min.css' />
+    <style>
+        body {
+            padding: 1em;
+            margin: 1em;
+        }
+
+        main {
+            width: 40%;
+        }
+
+        footer {
+            width: 40%;
+            display: flex;
+            flex-direction: row;
+        }
+
+        footer .form-group {
+            padding: 1em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <h3 class="row">Login</h3>
+        <div id="alert" class="alert alert-dismissible fade show" style="display: none;">
+            <span id="alert-text"></span>
+            <button type="button" class="close" onclick="dismissAlert()" data-dismiss="alert">&times;</button>
+        </div>
+        <main>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input class="form-control" type="text" name="username" id="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input class="form-control" type="password" name="password" id="password">
+            </div>
+            <div class="form-group">
+                <button class="form-control btn btn-outline-success" onclick="login()">Login</button>
+            </div>
+        </main>
+        <footer>
+            <div class="form-group">
+                <button class="form-control btn btn-primary" onclick="getDashboard()">Dashboard</button>
+            </div>
+
+            <div class="form-group">
+                <button class="form-control btn btn-info" onclick="getSettings()">Settings</button>
+            </div>
+
+            <div class="form-group">
+                <button onclick="logout()" class="logout form-control btn btn-danger"
+                    style="display: none;">Logout</button>
+            </div>
+
+
+        </footer>
+    </div>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.20.0/axios.min.js'></script>
+    <script>
+        let cookieCheckerTimeOut;
+        function login() {
+            const data = {
+                username: document.getElementById("username").value,
+                password: document.getElementById("password").value
+            }
+            axios.post('/api/login', data)
+                .then((res) => {
+                    // clear the inputs
+                    document.getElementById("username").value = ''
+                    document.getElementById("password").value = ''
+                    if (res && res.data && res.data.success) {
+                        setCookieWatcher();
+                        getDashboard();
+                    }
+                }).catch((err) => {
+                    setError(err.response.data.err);
+                })
+        }
+
+        function setCookieWatcher() {
+            const cookieCheckInterval = setInterval(
+                function () {
+                    if (!getCookie('token')) {
+                        logout();
+                        clearInterval(cookieCheckInterval);
+                    }
+                }
+                , 180000);
+        }
+
+
+        function setError(err) {
+            const errorMessage = document.getElementById("alert");
+            const alertText = document.getElementById("alert-text");
+
+            const classList = errorMessage.className.split(" ");
+            classList.push('alert-danger');
+            errorMessage.className = classList.join(" ")
+            errorMessage.style.display = 'block'
+            alertText.innerText = err
+        }
+
+        function dismissAlert() {
+            document.getElementById("alert").style.display = 'none'
+            document.getElementById("alert-text").innerText = '';
+        }
+
+        function getCookie(cookiename) {
+            try {
+                var cookiestring = RegExp(cookiename + "=[^;]+").exec(document.cookie).toString().split("=")[1];
+                return decodeURIComponent(cookiestring);
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function deleteCookie(name) {
+            if (getCookie(name)) {
+                document.cookie = name + "=" +
+                    ";expires=Thu, 01 Jan 1970 00:00:01 GMT";
+            }
+        }
+
+        function logout() {
+            deleteCookie("token")
+            history.replaceState(null, 'Login', '/')
+            window.location.reload();
+        }
+
+
+
+
+        function getDashboard() {
+            axios.get('/api/dashboard', {
+                headers: {
+                    'Authorization': `Bearer ${getCookie('token')}`
+                }
+            }).then((res) => {
+                if (res && res.data && res.data.success) {
+                    setPage(res.data.message, "Dashboard", "/dashboard");
+                }
+            }).catch((err) => {
+                setError("unauthorized to access the page");
+            })
+        }
+
+        function setPage(message, title, url) {
+            history.pushState(null, title, url);
+            document.querySelector('h3.row').innerText = title;
+            document.querySelector('main').innerHTML = `<h1>${message}</h1>`;
+            document.querySelector(".logout").style.display = 'block';
+        }
+
+        function getSettings() {
+            axios.get('/api/settings', {
+                headers: {
+                    'Authorization': `Bearer ${getCookie('token')}`
+                }
+            }).then((res) => {
+                if (res && res.data && res.data.success) {
+                    setPage(res.data.message, "Settings", "/settings")
+                }
+            }).catch((err) => {
+                setError("unauthorized to access the page");
+            })
+        }
+
+        // if token is set
+        if (getCookie('token')) {
+            getDashboard();
+        }
+
+    </script>
+</body>
+
+</html>

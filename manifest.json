@@ -1,0 +1,8 @@
+{
+    "short_name": "Auth API",
+    "name": "Authentication API",
+    "description": "Authentication API for beginners",
+    "permission":[
+        "cookies"
+    ]
+  }
